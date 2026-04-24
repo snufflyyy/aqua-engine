@@ -1,4 +1,5 @@
 #include "aqua.h"
+#include "SDL3/SDL_events.h"
 
 #include <stdio.h>
 
@@ -32,12 +33,26 @@ AquaContext* aqua_initialize(AquaContextInitializeProperties initialize_properti
 		printf("[INFO] [Aqua] Created Aqua context!\n");
 	#endif
 
+	printf("[INFO] [Aqua] Press P to toggle Aqua properties window\n");
+
 	return aqua_context;
 }
 
 void aqua_event(AquaContext* aqua_context) {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+			case SDL_EVENT_KEY_DOWN: {
+				switch (event.key.scancode) {
+					case SDL_SCANCODE_P: {
+						aqua_context->properties.show_aqua_properties_window = !aqua_context->properties.show_aqua_properties_window;
+					} break;
+					default: break;
+				}
+			} break;
+			default: break;
+		}
+
 		aqua_window_event(aqua_context->window, &event);
 	}
 }
@@ -54,7 +69,7 @@ void aqua_imgui_update(AquaContext* aqua_context) {
 }
 
 void aqua_imgui_properties_window(AquaContext* aqua_context) {
-	igBegin("Aqua Properties", &aqua_context->properties.show_aqua_properties_window, ImGuiWindowFlags_AlwaysAutoResize);
+	igBegin("Aqua Properties", &aqua_context->properties.show_aqua_properties_window, ImGuiWindowFlags_None);
 	igCheckbox("Show Window Properties", &aqua_context->window->properties.show_properties_window);
 	igEnd();
 }

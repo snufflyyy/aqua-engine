@@ -1,5 +1,4 @@
 #include "gfx/window/window.h"
-#include "SDL3/SDL_video.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -72,7 +71,6 @@ AquaWindow* aqua_window_create(AquaWindowProperties properties) {
        	return NULL;
     }
 
-
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -86,9 +84,12 @@ AquaWindow* aqua_window_create(AquaWindowProperties properties) {
     window->fps = 0.0f;
     window->delta_time = 0.0;
 
-    igCreateContext(NULL);
-    ImGuiIO* ioptr = igGetIO_Nil();
-    ioptr->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    window->imgui_context = igCreateContext(NULL);
+    ImGuiIO* imgui_io = igGetIO_Nil();
+    imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    #ifdef IMGUI_HAS_DOCK
+      imgui_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    #endif
 
     ImGui_ImplSDL3_InitForOpenGL(window->sdl_window, window->gl_context);
     ImGui_ImplOpenGL3_Init(NULL);
@@ -145,13 +146,26 @@ void aqua_window_imgui_begin(AquaWindow* window) {
     ImGui_ImplSDL3_NewFrame();
     igNewFrame();
 
+    if (window->properties.use_imgui_dockspace) {
+    	igDockSpaceOverViewport(igGetID_Str("dockspace"), NULL, ImGuiDockNodeFlags_PassthruCentralNode, NULL);
+    }
+
     window->started_imgui_frame = true;
+}
+
+void aqua_window_imgui_update(AquaWindow* window) {
+	if (window->properties.show_properties_window) {
+		aqua_window_imgui_properties_window(window);
+	}
+	if (window->properties.show_performance_window) {
+		aqua_window_imgui_performance_window(window);
+	}
 }
 
 void aqua_window_imgui_performance_window(AquaWindow* window) {
 	if (!window->started_imgui_frame) { return; }
 
-	igBegin("Performance", &window->properties.show_performance_window, ImGuiWindowFlags_AlwaysAutoResize);
+	igBegin("Performance", &window->properties.show_performance_window, ImGuiWindowFlags_None);
 	igText("Vsync: %s", (window->properties.vsync) ? "Yes" : "No");
 	igText("FPS: %0.2f", window->fps);
 	igText("Deltatime: %0.2f", window->delta_time * 1000.0);
@@ -161,28 +175,21 @@ void aqua_window_imgui_performance_window(AquaWindow* window) {
 void aqua_window_imgui_properties_window(AquaWindow* window) {
 	if (!window->started_imgui_frame) { return; }
 
-	igBegin("Window Properties", &window->properties.show_properties_window, ImGuiWindowFlags_AlwaysAutoResize);
+	igBegin("Window Properties", &window->properties.show_properties_window, ImGuiWindowFlags_None);
 	igText("Size: %ux%u", window->properties.width, window->properties.height);
 	if (igCheckbox("Resizeable", &window->properties.resizeable)) { aqua_window_set_resizeable(window, window->properties.resizeable); }
 	if (igCheckbox("Fullscreen", &window->properties.fullscreen)) { aqua_window_set_fullscreen(window, window->properties.fullscreen); }
 	if (igCheckbox("Vsync", &window->properties.vsync)) { aqua_window_set_vsync(window, window->properties.vsync); }
-	if (igCheckbox("Capture Mouse", &window->properties.mouse_captured)) { aqua_window_set_mouse_captured(window, window->properties.mouse_captured); }
+	if (igCheckbox("Capture Mouse (ESC)", &window->properties.mouse_captured)) { aqua_window_set_mouse_captured(window, window->properties.mouse_captured); }
 	igCheckbox("Performance Window", &window->properties.show_performance_window);
+	igCheckbox("ImGui Dockspace", &window->properties.use_imgui_dockspace);
 	igEnd();
 }
 
 void aqua_window_imgui_end(AquaWindow* window) {
 	if (!window->started_imgui_frame) { return; }
 
-	if (window->properties.show_properties_window) {
-		aqua_window_imgui_properties_window(window);
-	}
-	if (window->properties.show_performance_window) {
-		aqua_window_imgui_performance_window(window);
-	}
-
     igEndFrame();
-
     window->started_imgui_frame = false;
 }
 
@@ -234,7 +241,7 @@ void aqua_window_destroy(AquaWindow* window) {
 	window->running = false;
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
-    igDestroyContext(NULL);
+    igDestroyContext(window->imgui_context);
  	SDL_GL_DestroyContext(window->gl_context);
    	SDL_DestroyWindow(window->sdl_window);
    	SDL_Quit();

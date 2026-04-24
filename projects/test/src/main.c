@@ -9,9 +9,12 @@ int main(void) {
 			.width = 1280,
 			.height = 720,
 			.title = "Aqua Engine - Test Project",
-			.fullscreen = false,
 			.resizeable = false,
+			.fullscreen = false,
 			.vsync = true,
+			.mouse_captured = false,
+			.show_performance_window = false,
+			.use_imgui_dockspace = true,
 		},
 		.show_properties_window = true,
 	};
@@ -28,7 +31,8 @@ int main(void) {
 
 		// all imgui code must be in between these two function calls
 		aqua_window_imgui_begin(aqua_context->window);
-		aqua_imgui_update(aqua_context);
+			aqua_window_imgui_update(aqua_context->window);
+			aqua_imgui_update(aqua_context);
 		aqua_window_imgui_end(aqua_context->window);
 
 		aqua_draw(aqua_context);
