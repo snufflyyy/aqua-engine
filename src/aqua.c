@@ -11,6 +11,24 @@
 
 #include "gfx/window/window.h"
 
+const AquaContextInitializeProperties AQUA_CONTEXT_DEFAULT_INITIALIZE_PROPERTIES = {
+	.window_properties = {
+		.width = 1280,
+		.height = 720,
+		.title = "Aqua Engine",
+		.resizeable = false,
+		.fullscreen = false,
+		.vsync = false,
+		.mouse_captured = false,
+		.show_performance_window = false,
+		.rainbow_clear_color = false,
+		.rainbow_clear_color_speed = 2.0f,
+		.clear_color = { 0.0f, 0.0f, 0.0f },
+		.use_imgui_dockspace = false,
+	},
+	.show_properties_window = true,
+};
+
 AquaContext* aqua_initialize(AquaContextInitializeProperties initialize_properties) {
 	AquaContext* aqua_context = (AquaContext*) malloc(sizeof(AquaContext));
 	if (!aqua_context) {
@@ -21,7 +39,7 @@ AquaContext* aqua_initialize(AquaContextInitializeProperties initialize_properti
 	aqua_context->properties.show_aqua_properties_window = initialize_properties.show_properties_window;
 
 	aqua_context->window = aqua_window_create(initialize_properties.window_properties);
-	if (!aqua_context) {
+	if (!aqua_context->window) {
 		fprintf(stderr, "[ERROR] [Aqua] Failed to create window!\n");
 		free(aqua_context);
 		return NULL;
@@ -69,13 +87,12 @@ void aqua_imgui_update(AquaContext* aqua_context) {
 }
 
 void aqua_imgui_properties_window(AquaContext* aqua_context) {
-	igBegin("Aqua Properties", &aqua_context->properties.show_aqua_properties_window, ImGuiWindowFlags_None);
+	igBegin("Aqua Properties (P)", &aqua_context->properties.show_aqua_properties_window, ImGuiWindowFlags_None);
 	igCheckbox("Show Window Properties", &aqua_context->window->properties.show_properties_window);
 	igEnd();
 }
 
 void aqua_draw(AquaContext* aqua_context) {
-	aqua_window_clear();
 	aqua_window_imgui_draw(aqua_context->window);
 }
 

@@ -4,10 +4,13 @@
 
 #include "gfx/window/window.h"
 
+
 typedef struct AquaContextInitializeProperties {
 	AquaWindowProperties window_properties;
 	bool show_properties_window;
 } AquaContextInitializeProperties;
+
+extern const AquaContextInitializeProperties AQUA_CONTEXT_DEFAULT_INITIALIZE_PROPERTIES;
 
 typedef struct AquaContextProperties {
 	bool show_aqua_properties_window;

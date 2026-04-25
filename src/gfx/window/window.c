@@ -1,4 +1,5 @@
 #include "gfx/window/window.h"
+#include "gfx/color.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -40,7 +41,7 @@ AquaWindow* aqua_window_create(AquaWindowProperties properties) {
     window->properties = properties;
 
     SDL_WindowFlags sdl_window_flags = SDL_WINDOW_OPENGL;
-    if (properties.resizeable) { sdl_window_flags |= SDL_WINDOW_RESIZABLE; }
+    if (window->properties.resizeable) { sdl_window_flags |= SDL_WINDOW_RESIZABLE; }
     if (window->properties.fullscreen) { sdl_window_flags |= SDL_WINDOW_FULLSCREEN; }
 
    	window->sdl_window = SDL_CreateWindow(properties.title, (i32) properties.width, (i32) properties.height, sdl_window_flags);
@@ -85,7 +86,8 @@ AquaWindow* aqua_window_create(AquaWindowProperties properties) {
     window->delta_time = 0.0;
 
     window->imgui_context = igCreateContext(NULL);
-    ImGuiIO* imgui_io = igGetIO_Nil();
+
+    ImGuiIO* imgui_io = igGetIO_ContextPtr(window->imgui_context);
     imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     #ifdef IMGUI_HAS_DOCK
       imgui_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -139,6 +141,18 @@ void aqua_window_update(AquaWindow* window) {
 	if (window->delta_time > 0.0) {
 	    window->fps = 1.0f / ((float) window->delta_time);
 	}
+
+	if (window->properties.rainbow_clear_color) {
+		float t = (float) ((double) performance_counter / (double) window->performance_frequency);
+		float phase = window->properties.rainbow_clear_color_speed * t;
+
+		AquaColor new_clear_color = {
+			0.5f + 0.5f * sinf(phase + 0.0f),
+			0.5f + 0.5f * sinf(phase + 2.0943951f), // 2pi/3
+			0.5f + 0.5f * sinf(phase + 4.1887902f) // 4pi/3
+		};
+		aqua_window_set_clear_color(new_clear_color);
+	}
 }
 
 void aqua_window_imgui_begin(AquaWindow* window) {
@@ -168,7 +182,7 @@ void aqua_window_imgui_performance_window(AquaWindow* window) {
 	igBegin("Performance", &window->properties.show_performance_window, ImGuiWindowFlags_None);
 	igText("Vsync: %s", (window->properties.vsync) ? "Yes" : "No");
 	igText("FPS: %0.2f", window->fps);
-	igText("Deltatime: %0.2f", window->delta_time * 1000.0);
+	igText("Deltatime: %0.2f ms", window->delta_time * 1000.0);
 	igEnd();
 }
 
@@ -177,10 +191,20 @@ void aqua_window_imgui_properties_window(AquaWindow* window) {
 
 	igBegin("Window Properties", &window->properties.show_properties_window, ImGuiWindowFlags_None);
 	igText("Size: %ux%u", window->properties.width, window->properties.height);
+	igSeparator();
 	if (igCheckbox("Resizeable", &window->properties.resizeable)) { aqua_window_set_resizeable(window, window->properties.resizeable); }
 	if (igCheckbox("Fullscreen", &window->properties.fullscreen)) { aqua_window_set_fullscreen(window, window->properties.fullscreen); }
 	if (igCheckbox("Vsync", &window->properties.vsync)) { aqua_window_set_vsync(window, window->properties.vsync); }
 	if (igCheckbox("Capture Mouse (ESC)", &window->properties.mouse_captured)) { aqua_window_set_mouse_captured(window, window->properties.mouse_captured); }
+	igSeparator();
+	if (igCheckbox("Rainbow Clear Color", &window->properties.rainbow_clear_color)) {
+		aqua_window_set_clear_color(window->properties.clear_color);
+	}
+	igInputFloat("Rainbow Clear Color Speed", &window->properties.rainbow_clear_color_speed, 0.1f, 0.2f, "%0.2f", ImGuiInputTextFlags_None);
+	if (igColorEdit3("Clear Color", window->properties.clear_color, ImGuiColorEditFlags_None) && !window->properties.rainbow_clear_color) {
+		aqua_window_set_clear_color(window->properties.clear_color);
+	}
+	igSeparator();
 	igCheckbox("Performance Window", &window->properties.show_performance_window);
 	igCheckbox("ImGui Dockspace", &window->properties.use_imgui_dockspace);
 	igEnd();
@@ -202,6 +226,7 @@ void aqua_window_imgui_draw(AquaWindow* window) {
 
 void aqua_window_set_resizeable(AquaWindow* window, bool value) {
 	SDL_SetWindowResizable(window->sdl_window, value);
+	window->properties.resizeable = value;
 }
 
 void aqua_window_set_fullscreen(AquaWindow* window, bool value) {
@@ -217,9 +242,10 @@ void aqua_window_set_vsync(AquaWindow* window, bool value) {
 void aqua_window_set_mouse_captured(AquaWindow *window, bool value) {
 	SDL_SetWindowRelativeMouseMode(window->sdl_window, value);
     SDL_SetWindowMouseGrab(window->sdl_window, value);
+    window->properties.mouse_captured = value;
 }
 
-void aqua_window_set_clear_color(vec3 color) {
+void aqua_window_set_clear_color(AquaColor color) {
     glClearColor(color[0], color[1], color[2], 1.0f);
 }
 
@@ -238,6 +264,8 @@ void aqua_window_get_size(AquaWindow* window, u32* width, u32* height) {
 }
 
 void aqua_window_destroy(AquaWindow* window) {
+	if (!window) { return; }
+
 	window->running = false;
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();

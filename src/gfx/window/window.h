@@ -8,6 +8,7 @@
 #include <cimgui_impl.h>
 
 #include "utils/base-types.h"
+#include "gfx/color.h"
 
 typedef struct AquaWindowProperties {
 	bool show_properties_window;
@@ -18,8 +19,12 @@ typedef struct AquaWindowProperties {
 	bool fullscreen;
 	bool vsync;
 	bool mouse_captured;
-	bool show_performance_window;
 
+	bool rainbow_clear_color; // for fun
+	float rainbow_clear_color_speed;
+	AquaColor clear_color;
+
+	bool show_performance_window;
 	bool use_imgui_dockspace;
 } AquaWindowProperties;
 
@@ -53,7 +58,7 @@ void aqua_window_set_resizeable(AquaWindow* window, bool value);
 void aqua_window_set_fullscreen(AquaWindow* window, bool value);
 void aqua_window_set_vsync(AquaWindow* window, bool value);
 void aqua_window_set_mouse_captured(AquaWindow* window, bool value);
-void aqua_window_set_clear_color(vec3 color);
+void aqua_window_set_clear_color(AquaColor color);
 void aqua_window_clear(void);
 void aqua_window_resize(AquaWindow* window, u32 new_width, u32 new_height);
 void aqua_window_get_size(AquaWindow* window, u32* width, u32* height);

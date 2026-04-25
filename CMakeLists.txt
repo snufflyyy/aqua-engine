@@ -36,8 +36,12 @@ add_executable(
 	projects/test/src/main.c # just for testing
 
 	src/aqua.c
-	src/gfx/window/window.c
+
 	src/utils/file/file.c
+
+	src/gfx/window/window.c
+	src/gfx/shader/shader.c
+	src/gfx/mesh/mesh.c
 
     external/cimgui/imgui/backends/imgui_impl_sdl3.cpp
     external/cimgui/imgui/backends/imgui_impl_opengl3.cpp

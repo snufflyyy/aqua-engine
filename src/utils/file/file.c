@@ -5,7 +5,8 @@
 
 #include "utils/base-types.h"
 
-const char* aqua_file_open(const char* file_path) {
+// MUST BE FREED AFTER USE
+char* aqua_file_to_string(const char* file_path) {
     FILE* file = fopen(file_path, "r");
     if (!file) {
         fprintf(stderr, "[ERROR] [Aqua] [File] Failed to open file!\n");
@@ -35,4 +36,8 @@ const char* aqua_file_open(const char* file_path) {
     fclose(file);
 
     return string;
+}
+
+void aqua_file_free_string(char* string) {
+	free(string);
 }
